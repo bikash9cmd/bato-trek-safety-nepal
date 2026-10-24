@@ -1,0 +1,11 @@
+{
+  "_note": "High passes on Nepal's most-walked trekking routes. Coordinates are approximate (within about 2 km), which is far finer than the 0.25 degree (about 25 km) weather grids they are matched to. Elevations are the commonly published figures.",
+  "passes": [
+    {"id": "thorong-la",   "name": "Thorong La",   "route": "annapurna-circuit", "lat": 28.7953, "lon": 83.9367, "elev_m": 5416},
+    {"id": "larkya-la",    "name": "Larkya La",    "route": "manaslu-circuit",   "lat": 28.6611, "lon": 84.5506, "elev_m": 5106},
+    {"id": "cho-la",       "name": "Cho La",       "route": "everest-three-passes", "lat": 27.9617, "lon": 86.7533, "elev_m": 5420},
+    {"id": "renjo-la",     "name": "Renjo La",     "route": "everest-three-passes", "lat": 27.9567, "lon": 86.6450, "elev_m": 5360},
+    {"id": "kongma-la",    "name": "Kongma La",    "route": "everest-three-passes", "lat": 27.9300, "lon": 86.8367, "elev_m": 5535},
+    {"id": "laurebina-la", "name": "Laurebina La", "route": "langtang-gosainkunda", "lat": 28.0750, "lon": 85.4083, "elev_m": 4610}
+  ]
+}

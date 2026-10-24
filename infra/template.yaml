@@ -1,0 +1,406 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Bato - overdue-trek alerts and storm holds for Nepal's high passes. One stack in ap-south-1
+  (Mumbai, the closest region to Nepal). See infra/README.md for the parameters and deploy steps.
+
+Parameters:
+  AlarmEmail:
+    Type: String
+    Description: Who gets paged when the safety system itself stops working (sweeper silent, SMS failing).
+  SmsMode:
+    Type: String
+    AllowedValues: [dry_run, aggregator]
+    Default: dry_run
+  SmsParameterName:
+    Type: String
+    Default: /bato/sms/aggregator
+    Description: SSM SecureString, JSON {"url", "token", "sender_id"} for the Nepali SMS aggregator.
+  WebhookTokenParameterName:
+    Type: String
+    Default: /bato/sms/webhook-token
+    Description: SSM SecureString the aggregator sends in the x-bato-token header on inbound SMS.
+  SmsDailyBudget:
+    Type: Number
+    Default: 2000
+    Description: Informational SMS (receipts, watches) stop after this many a day. Anything about a group that may be in trouble is never budgeted.
+  HoldMm24h:
+    Type: Number
+    Default: 30
+  WatchMm24h:
+    Type: Number
+    Default: 15
+
+Globals:
+  Function:
+    Architectures: [arm64]
+    MemorySize: 256
+    Timeout: 15
+    Tracing: Active
+    LoggingConfig:
+      LogFormat: JSON
+    Environment:
+      Variables:
+        BATO_TABLE: !Ref Table
+        BATO_ESCALATION_ARN: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:bato-escalation
+        BATO_SMS_MODE: !Ref SmsMode
+        BATO_SMS_PARAM: !Ref SmsParameterName
+        BATO_WEBHOOK_TOKEN_PARAM: !Ref WebhookTokenParameterName
+        BATO_SMS_DAILY_BUDGET: !Ref SmsDailyBudget
+        BATO_HOLD_MM_24H: !Ref HoldMm24h
+        BATO_WATCH_MM_24H: !Ref WatchMm24h
+
+Resources:
+  # ---------------------------------------------------------------- data
+  Table:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: bato
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: pk, AttributeType: S}
+        - {AttributeName: sk, AttributeType: S}
+        - {AttributeName: due_pk, AttributeType: S}
+        - {AttributeName: due_sk, AttributeType: N}
+      KeySchema:
+        - {AttributeName: pk, KeyType: HASH}
+        - {AttributeName: sk, KeyType: RANGE}
+      GlobalSecondaryIndexes:
+        - IndexName: due          # sparse: only OPEN treks carry due_pk/due_sk
+          KeySchema:
+            - {AttributeName: due_pk, KeyType: HASH}
+            - {AttributeName: due_sk, KeyType: RANGE}
+          Projection: {ProjectionType: KEYS_ONLY}
+      TimeToLiveSpecification: {AttributeName: ttl, Enabled: true}
+      PointInTimeRecoverySpecification: {PointInTimeRecoveryEnabled: true}
+      SSESpecification: {SSEEnabled: true}
+
+  OpsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      KmsMasterKeyId: alias/aws/sns
+      Subscription:
+        - {Protocol: email, Endpoint: !Ref AlarmEmail}
+
+  ScheduleDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+
+  # ---------------------------------------------------------------- identity
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: bato-agencies
+      AdminCreateUserConfig: {AllowAdminCreateUserOnly: true}   # agencies are onboarded, not self-signed-up
+      MfaConfiguration: OPTIONAL
+      EnabledMfas: [SOFTWARE_TOKEN_MFA]
+      UsernameAttributes: [email]
+      Policies:
+        PasswordPolicy: {MinimumLength: 12, RequireNumbers: true, RequireSymbols: false}
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows: [ALLOW_USER_SRP_AUTH, ALLOW_REFRESH_TOKEN_AUTH]
+      AccessTokenValidity: 12
+      IdTokenValidity: 12
+      TokenValidityUnits: {AccessToken: hours, IdToken: hours}
+
+  WardensGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref UserPool
+      GroupName: pass-wardens
+      Description: ACAP and national park rangers, lodge committees. The only people who can lift a storm hold.
+
+  AgenciesGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref UserPool
+      GroupName: agencies
+
+  # ---------------------------------------------------------------- API
+  Api:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 200
+        ThrottlingRateLimit: 100
+      Auth:
+        DefaultAuthorizer: Cognito
+        Authorizers:
+          Cognito:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+              audience: [!Ref UserPoolClient]
+
+  RegisterFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.12
+      CodeUri: ../build/lambda
+      Handler: bato.aws.handlers.api_register
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref Table}
+      Events:
+        Post: {Type: HttpApi, Properties: {ApiId: !Ref Api, Method: POST, Path: /treks}}
+
+  CheckinFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.12
+      CodeUri: ../build/lambda
+      Handler: bato.aws.handlers.api_checkin
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref Table}
+        - Statement:
+            - Effect: Allow
+              Action: states:StopExecution
+              Resource: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:execution:bato-escalation:*
+      Events:
+        Post: {Type: HttpApi, Properties: {ApiId: !Ref Api, Method: POST, Path: /checkins}}
+
+  GetTrekFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.12
+      CodeUri: ../build/lambda
+      Handler: bato.aws.handlers.api_get_trek
+      Policies:
+        - DynamoDBReadPolicy: {TableName: !Ref Table}
+      Events:
+        Get: {Type: HttpApi, Properties: {ApiId: !Ref Api, Method: GET, Path: "/treks/{trek_id}"}}
+
+  PassesFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.12
+      CodeUri: ../build/lambda
+      Handler: bato.aws.handlers.api_passes
+      Policies:
+        - DynamoDBReadPolicy: {TableName: !Ref Table}
+      Events:
+        Get:   # public: lodges and checkposts show it on a screen
+          Type: HttpApi
+          Properties: {ApiId: !Ref Api, Method: GET, Path: /passes, Auth: {Authorizer: NONE}}
+
+  ClearPassFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.12
+      CodeUri: ../build/lambda
+      Handler: bato.aws.handlers.api_clear_pass
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref Table}
+      Events:
+        Post: {Type: HttpApi, Properties: {ApiId: !Ref Api, Method: POST, Path: "/passes/{pass_id}/clear"}}
+
+  SmsInboundFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.12
+      CodeUri: ../build/lambda
+      Handler: bato.aws.handlers.sms_inbound
+      ReservedConcurrentExecutions: 50      # a misbehaving aggregator can't starve the account
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref Table}
+        - Statement:
+            - Effect: Allow
+              Action: [states:StartExecution, states:StopExecution]
+              Resource:
+                - !Ref EscalationStateMachine
+                - !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:execution:bato-escalation:*
+            - Effect: Allow
+              Action: ssm:GetParameter
+              Resource:
+                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SmsParameterName}
+                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${WebhookTokenParameterName}
+      Events:
+        Post:   # no JWT: the aggregator proves itself with the shared token, checked in the function
+          Type: HttpApi
+          Properties: {ApiId: !Ref Api, Method: POST, Path: /sms/inbound, Auth: {Authorizer: NONE}}
+
+  # ---------------------------------------------------------------- overdue
+  SweeperFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.12
+      CodeUri: ../build/lambda
+      Handler: bato.aws.handlers.sweeper
+      Timeout: 120
+      ReservedConcurrentExecutions: 1       # one sweeper at a time; overlap is safe anyway (conditional writes)
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref Table}
+        - Statement:
+            - Effect: Allow
+              Action: states:StartExecution
+              Resource: !Ref EscalationStateMachine
+      Events:
+        Every5Min:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(5 minutes)
+            DeadLetterConfig: {Arn: !GetAtt ScheduleDLQ.Arn}
+            RetryPolicy: {MaximumRetryAttempts: 2, MaximumEventAgeInSeconds: 240}
+
+  NotifyFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.12
+      CodeUri: ../build/lambda
+      Handler: bato.aws.handlers.notify
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref Table}
+        - Statement:
+            - Effect: Allow
+              Action: ssm:GetParameter
+              Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SmsParameterName}
+
+  EscalationStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: bato-escalation
+      Type: STANDARD                        # waits of hours; Express workflows stop at 5 minutes
+      DefinitionUri: statemachine/escalation.asl.json
+      DefinitionSubstitutions:
+        NotifyFunctionArn: !GetAtt NotifyFn.Arn
+        OpsTopicArn: !Ref OpsTopic
+      Policies:
+        - LambdaInvokePolicy: {FunctionName: !Ref NotifyFn}
+        - SNSPublishMessagePolicy: {TopicName: !GetAtt OpsTopic.TopicName}
+      Tracing: {Enabled: true}
+
+  # ---------------------------------------------------------------- weather
+  WeatherFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image                    # eccodes is native code; a container image carries it
+      MemorySize: 1024
+      Timeout: 180
+      Architectures: [arm64]
+      ImageConfig:
+        Command: [bato.aws.handlers.weather_poll]
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref Table}
+        - Statement:
+            - Effect: Allow
+              Action: ssm:GetParameter
+              Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SmsParameterName}
+      Events:
+        AfterEachGefsCycle:                 # 0.25 degree files are complete ~5-6 h after 00/06/12/18 UTC
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(30 5,11,17,23 * * ? *)
+            DeadLetterConfig: {Arn: !GetAtt ScheduleDLQ.Arn}
+            RetryPolicy: {MaximumRetryAttempts: 2, MaximumEventAgeInSeconds: 3600}
+    Metadata:
+      Dockerfile: infra/Dockerfile.weather
+      DockerContext: ..
+      DockerTag: python3.12-arm64
+
+  # ---------------------------------------------------------------- watching the watcher
+  SweeperSilentAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: The overdue sweeper has not run for 15 minutes. Nobody is being watched.
+      Namespace: Bato
+      MetricName: SweeperRuns
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching           # silence is the failure we're looking for
+      AlarmActions: [!Ref OpsTopic]
+      OKActions: [!Ref OpsTopic]
+
+  WeatherSilentAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: No forecast read for 13 hours (two GEFS cycles). Storm holds are stale.
+      Namespace: Bato
+      MetricName: WeatherPolls
+      Statistic: Sum
+      Period: 3600
+      EvaluationPeriods: 13
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+      AlarmActions: [!Ref OpsTopic]
+
+  EscalationFailedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: An escalation ladder failed. A group may be overdue and nobody told.
+      Namespace: AWS/States
+      MetricName: ExecutionsFailed
+      Dimensions: [{Name: StateMachineArn, Value: !Ref EscalationStateMachine}]
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OpsTopic]
+
+  NotifyErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: SMS sends are failing (aggregator down or token expired).
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions: [{Name: FunctionName, Value: !Ref NotifyFn}]
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 3
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OpsTopic]
+
+  InboundErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Inbound SMS check-ins are failing.
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions: [{Name: FunctionName, Value: !Ref SmsInboundFn}]
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OpsTopic]
+
+  ScheduleDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: A scheduled sweeper or weather run could not be delivered.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions: [{Name: QueueName, Value: !GetAtt ScheduleDLQ.QueueName}]
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OpsTopic]
+
+Outputs:
+  ApiUrl:
+    Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Value: !Ref UserPoolClient
+  SmsWebhook:
+    Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/sms/inbound
