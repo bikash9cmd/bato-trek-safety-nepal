@@ -1,0 +1,451 @@
+{
+  "forecast_days": 6040,
+  "grid_cells": 4,
+  "seasons": [
+    "2010-autumn",
+    "2010-spring",
+    "2011-autumn",
+    "2011-spring",
+    "2012-autumn",
+    "2012-spring",
+    "2013-autumn",
+    "2013-spring",
+    "2014-autumn",
+    "2014-spring",
+    "2015-autumn",
+    "2015-spring",
+    "2016-autumn",
+    "2016-spring",
+    "2017-autumn",
+    "2017-spring",
+    "2018-autumn",
+    "2018-spring",
+    "2019-autumn",
+    "2019-spring"
+  ],
+  "event_threshold_mm": 20.0,
+  "event_days": 30,
+  "hold_threshold_mm": 30.0,
+  "watch_threshold_mm": 15.0,
+  "sweep": [
+    {
+      "threshold_mm": 10,
+      "hits": 29,
+      "misses": 1,
+      "false_alarms": 843,
+      "correct_negatives": 5167,
+      "pod": 0.967,
+      "far": 0.967,
+      "warning_days_per_pass_per_season": 10.9
+    },
+    {
+      "threshold_mm": 15,
+      "hits": 27,
+      "misses": 3,
+      "false_alarms": 432,
+      "correct_negatives": 5578,
+      "pod": 0.9,
+      "far": 0.941,
+      "warning_days_per_pass_per_season": 5.7
+    },
+    {
+      "threshold_mm": 20,
+      "hits": 24,
+      "misses": 6,
+      "false_alarms": 243,
+      "correct_negatives": 5767,
+      "pod": 0.8,
+      "far": 0.91,
+      "warning_days_per_pass_per_season": 3.3
+    },
+    {
+      "threshold_mm": 25,
+      "hits": 24,
+      "misses": 6,
+      "false_alarms": 139,
+      "correct_negatives": 5871,
+      "pod": 0.8,
+      "far": 0.853,
+      "warning_days_per_pass_per_season": 2.0
+    },
+    {
+      "threshold_mm": 30,
+      "hits": 24,
+      "misses": 6,
+      "false_alarms": 68,
+      "correct_negatives": 5942,
+      "pod": 0.8,
+      "far": 0.739,
+      "warning_days_per_pass_per_season": 1.1
+    },
+    {
+      "threshold_mm": 35,
+      "hits": 24,
+      "misses": 6,
+      "false_alarms": 41,
+      "correct_negatives": 5969,
+      "pod": 0.8,
+      "far": 0.631,
+      "warning_days_per_pass_per_season": 0.8
+    },
+    {
+      "threshold_mm": 40,
+      "hits": 22,
+      "misses": 8,
+      "false_alarms": 21,
+      "correct_negatives": 5989,
+      "pod": 0.733,
+      "far": 0.488,
+      "warning_days_per_pass_per_season": 0.5
+    },
+    {
+      "threshold_mm": 50,
+      "hits": 17,
+      "misses": 13,
+      "false_alarms": 9,
+      "correct_negatives": 6001,
+      "pod": 0.567,
+      "far": 0.346,
+      "warning_days_per_pass_per_season": 0.3
+    },
+    {
+      "threshold_mm": 60,
+      "hits": 13,
+      "misses": 17,
+      "false_alarms": 3,
+      "correct_negatives": 6007,
+      "pod": 0.433,
+      "far": 0.188,
+      "warning_days_per_pass_per_season": 0.2
+    },
+    {
+      "threshold_mm": 80,
+      "hits": 10,
+      "misses": 20,
+      "false_alarms": 2,
+      "correct_negatives": 6008,
+      "pod": 0.333,
+      "far": 0.167,
+      "warning_days_per_pass_per_season": 0.1
+    }
+  ],
+  "per_pass_at_hold": [
+    {
+      "passes": "Thorong La",
+      "forecast_days": 1510,
+      "event_days": 10,
+      "hits": 7,
+      "misses": 3,
+      "false_alarms": 9,
+      "correct_negatives": 1491,
+      "pod": 0.7,
+      "far": 0.562,
+      "holds_per_season": 0.8
+    },
+    {
+      "passes": "Larkya La",
+      "forecast_days": 1510,
+      "event_days": 8,
+      "hits": 7,
+      "misses": 1,
+      "false_alarms": 37,
+      "correct_negatives": 1465,
+      "pod": 0.875,
+      "far": 0.841,
+      "holds_per_season": 2.2
+    },
+    {
+      "passes": "Laurebina La",
+      "forecast_days": 1510,
+      "event_days": 0,
+      "hits": 0,
+      "misses": 0,
+      "false_alarms": 14,
+      "correct_negatives": 1496,
+      "pod": null,
+      "far": 1.0,
+      "holds_per_season": 0.7
+    },
+    {
+      "passes": "Cho La / Renjo La / Kongma La",
+      "forecast_days": 1510,
+      "event_days": 12,
+      "hits": 10,
+      "misses": 2,
+      "false_alarms": 8,
+      "correct_negatives": 1490,
+      "pod": 0.833,
+      "far": 0.444,
+      "holds_per_season": 0.9
+    }
+  ],
+  "per_pass_at_watch": [
+    {
+      "passes": "Thorong La",
+      "forecast_days": 1510,
+      "event_days": 10,
+      "hits": 8,
+      "misses": 2,
+      "false_alarms": 85,
+      "correct_negatives": 1415,
+      "pod": 0.8,
+      "far": 0.914,
+      "holds_per_season": 4.7
+    },
+    {
+      "passes": "Larkya La",
+      "forecast_days": 1510,
+      "event_days": 8,
+      "hits": 7,
+      "misses": 1,
+      "false_alarms": 218,
+      "correct_negatives": 1284,
+      "pod": 0.875,
+      "far": 0.969,
+      "holds_per_season": 11.2
+    },
+    {
+      "passes": "Laurebina La",
+      "forecast_days": 1510,
+      "event_days": 0,
+      "hits": 0,
+      "misses": 0,
+      "false_alarms": 73,
+      "correct_negatives": 1437,
+      "pod": null,
+      "far": 1.0,
+      "holds_per_season": 3.6
+    },
+    {
+      "passes": "Cho La / Renjo La / Kongma La",
+      "forecast_days": 1510,
+      "event_days": 12,
+      "hits": 12,
+      "misses": 0,
+      "false_alarms": 56,
+      "correct_negatives": 1442,
+      "pod": 1.0,
+      "far": 0.824,
+      "holds_per_season": 3.4
+    }
+  ],
+  "biggest_events": [
+    {
+      "pass_id": "thorong-la",
+      "init_date": "2014-10-13",
+      "observed_mm": 94.7,
+      "forecast_mm": 103.9,
+      "level": "HOLD"
+    },
+    {
+      "pass_id": "larkya-la",
+      "init_date": "2014-10-14",
+      "observed_mm": 93.5,
+      "forecast_mm": 83.3,
+      "level": "HOLD"
+    },
+    {
+      "pass_id": "cho-la",
+      "init_date": "2013-10-14",
+      "observed_mm": 53.3,
+      "forecast_mm": 93.9,
+      "level": "HOLD"
+    },
+    {
+      "pass_id": "larkya-la",
+      "init_date": "2013-10-14",
+      "observed_mm": 51.7,
+      "forecast_mm": 84.6,
+      "level": "HOLD"
+    },
+    {
+      "pass_id": "thorong-la",
+      "init_date": "2017-03-09",
+      "observed_mm": 46.8,
+      "forecast_mm": 40.7,
+      "level": "HOLD"
+    },
+    {
+      "pass_id": "larkya-la",
+      "init_date": "2017-03-10",
+      "observed_mm": 45.4,
+      "forecast_mm": 60.8,
+      "level": "HOLD"
+    },
+    {
+      "pass_id": "thorong-la",
+      "init_date": "2015-03-01",
+      "observed_mm": 44.1,
+      "forecast_mm": 81.4,
+      "level": "HOLD"
+    },
+    {
+      "pass_id": "larkya-la",
+      "init_date": "2015-03-01",
+      "observed_mm": 40.1,
+      "forecast_mm": 81.9,
+      "level": "HOLD"
+    },
+    {
+      "pass_id": "cho-la",
+      "init_date": "2014-05-26",
+      "observed_mm": 35.2,
+      "forecast_mm": 56.9,
+      "level": "HOLD"
+    },
+    {
+      "pass_id": "cho-la",
+      "init_date": "2015-03-01",
+      "observed_mm": 33.5,
+      "forecast_mm": 64.0,
+      "level": "HOLD"
+    }
+  ],
+  "misses_at_hold": [
+    {
+      "pass_id": "larkya-la",
+      "init_date": "2014-10-12",
+      "observed_mm": 28.4,
+      "forecast_mm": 14.0,
+      "level": "CLEAR"
+    },
+    {
+      "pass_id": "thorong-la",
+      "init_date": "2014-10-12",
+      "observed_mm": 26.5,
+      "forecast_mm": 18.5,
+      "level": "WATCH"
+    },
+    {
+      "pass_id": "thorong-la",
+      "init_date": "2016-05-27",
+      "observed_mm": 22.9,
+      "forecast_mm": 3.4,
+      "level": "CLEAR"
+    },
+    {
+      "pass_id": "thorong-la",
+      "init_date": "2016-05-28",
+      "observed_mm": 22.9,
+      "forecast_mm": 12.7,
+      "level": "CLEAR"
+    },
+    {
+      "pass_id": "cho-la",
+      "init_date": "2010-10-30",
+      "observed_mm": 21.0,
+      "forecast_mm": 19.5,
+      "level": "WATCH"
+    },
+    {
+      "pass_id": "cho-la",
+      "init_date": "2010-10-31",
+      "observed_mm": 21.0,
+      "forecast_mm": 15.1,
+      "level": "WATCH"
+    }
+  ],
+  "hudhud_2014": {
+    "runs": {
+      "2014-10-08": {
+        "members": {
+          "c00": 0.82,
+          "p01": 0.8,
+          "p02": 0.7,
+          "p03": 2.0,
+          "p04": 1.5
+        },
+        "members_at_hold": 0,
+        "control_level": "CLEAR"
+      },
+      "2014-10-09": {
+        "members": {
+          "c00": 1.0,
+          "p01": 0.9,
+          "p02": 0.7,
+          "p03": 1.3,
+          "p04": 1.3
+        },
+        "members_at_hold": 0,
+        "control_level": "CLEAR"
+      },
+      "2014-10-10": {
+        "members": {
+          "c00": 0.5,
+          "p01": 0.3,
+          "p02": 0.7,
+          "p03": 0.7,
+          "p04": 0.3
+        },
+        "members_at_hold": 0,
+        "control_level": "CLEAR"
+      },
+      "2014-10-11": {
+        "members": {
+          "c00": 0.3,
+          "p01": 0.2,
+          "p02": 0.6,
+          "p03": 0.4,
+          "p04": 0.2
+        },
+        "members_at_hold": 0,
+        "control_level": "CLEAR"
+      },
+      "2014-10-12": {
+        "members": {
+          "c00": 18.5,
+          "p01": 18.6,
+          "p02": 7.9,
+          "p03": 11.8,
+          "p04": 10.4
+        },
+        "members_at_hold": 0,
+        "control_level": "WATCH"
+      },
+      "2014-10-13": {
+        "members": {
+          "c00": 103.9,
+          "p01": 103.7,
+          "p02": 85.1,
+          "p03": 92.7,
+          "p04": 106.1
+        },
+        "members_at_hold": 5,
+        "control_level": "HOLD"
+      },
+      "2014-10-14": {
+        "members": {
+          "c00": 86.9,
+          "p01": 89.3,
+          "p02": 84.8,
+          "p03": 78.3,
+          "p04": 97.1
+        },
+        "members_at_hold": 5,
+        "control_level": "HOLD"
+      },
+      "2014-10-15": {
+        "members": {
+          "c00": 0.0,
+          "p01": 0.0,
+          "p02": 0.1,
+          "p03": 0.0,
+          "p04": 0.0
+        },
+        "members_at_hold": 0,
+        "control_level": "CLEAR"
+      }
+    },
+    "era5_daily_snow_mm": {
+      "2014-10-08": 0.2,
+      "2014-10-09": 0.1,
+      "2014-10-10": 0.5,
+      "2014-10-11": 0.1,
+      "2014-10-12": 0.0,
+      "2014-10-13": 26.5,
+      "2014-10-14": 94.7,
+      "2014-10-15": 0.1,
+      "2014-10-16": 0.4
+    }
+  }
+}

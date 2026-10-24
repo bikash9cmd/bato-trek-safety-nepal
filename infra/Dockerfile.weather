@@ -1,0 +1,6 @@
+# The weather poller needs eccodes (native GRIB2 decoder), so it ships as a container image.
+FROM public.ecr.aws/lambda/python:3.12-arm64
+RUN pip install --no-cache-dir "eccodes>=2.37"
+COPY bato ${LAMBDA_TASK_ROOT}/bato
+COPY data/passes.json data/trails.json ${LAMBDA_TASK_ROOT}/data/
+CMD ["bato.aws.handlers.weather_poll"]

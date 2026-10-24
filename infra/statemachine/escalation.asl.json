@@ -1,0 +1,281 @@
+{
+  "Comment": "Bato overdue-trek escalation ladder. Input: trek_id, execution, start (L1|HELP), wait_l2_s, wait_l3_s, note, hold.",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.start",
+          "StringEquals": "HELP",
+          "Next": "NotifyHELP"
+        }
+      ],
+      "Default": "NotifyL1"
+    },
+    "NotifyL1": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${NotifyFunctionArn}",
+        "Payload": {
+          "trek_id.$": "$.trek_id",
+          "execution.$": "$.execution",
+          "level": "L1",
+          "note.$": "$.note"
+        }
+      },
+      "ResultSelector": {
+        "still_overdue.$": "$.Payload.still_overdue"
+      },
+      "ResultPath": "$.last",
+      "TimeoutSeconds": 30,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException",
+            "States.Timeout"
+          ],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 6,
+          "BackoffRate": 2.0,
+          "JitterStrategy": "FULL"
+        },
+        {
+          "ErrorEquals": [
+            "States.TaskFailed"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 4,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailed"
+        }
+      ],
+      "Next": "AfterL1"
+    },
+    "AfterL1": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.last.still_overdue",
+          "BooleanEquals": true,
+          "Next": "WaitL2"
+        }
+      ],
+      "Default": "Resolved"
+    },
+    "WaitL2": {
+      "Type": "Wait",
+      "SecondsPath": "$.wait_l2_s",
+      "Next": "NotifyL2"
+    },
+    "NotifyL2": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${NotifyFunctionArn}",
+        "Payload": {
+          "trek_id.$": "$.trek_id",
+          "execution.$": "$.execution",
+          "level": "L2",
+          "note.$": "$.note"
+        }
+      },
+      "ResultSelector": {
+        "still_overdue.$": "$.Payload.still_overdue"
+      },
+      "ResultPath": "$.last",
+      "TimeoutSeconds": 30,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException",
+            "States.Timeout"
+          ],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 6,
+          "BackoffRate": 2.0,
+          "JitterStrategy": "FULL"
+        },
+        {
+          "ErrorEquals": [
+            "States.TaskFailed"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 4,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailed"
+        }
+      ],
+      "Next": "AfterL2"
+    },
+    "AfterL2": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.last.still_overdue",
+          "BooleanEquals": true,
+          "Next": "WaitL3"
+        }
+      ],
+      "Default": "Resolved"
+    },
+    "NotifyHELP": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${NotifyFunctionArn}",
+        "Payload": {
+          "trek_id.$": "$.trek_id",
+          "execution.$": "$.execution",
+          "level": "HELP",
+          "note.$": "$.note"
+        }
+      },
+      "ResultSelector": {
+        "still_overdue.$": "$.Payload.still_overdue"
+      },
+      "ResultPath": "$.last",
+      "TimeoutSeconds": 30,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException",
+            "States.Timeout"
+          ],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 6,
+          "BackoffRate": 2.0,
+          "JitterStrategy": "FULL"
+        },
+        {
+          "ErrorEquals": [
+            "States.TaskFailed"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 4,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailed"
+        }
+      ],
+      "Next": "AfterHELP"
+    },
+    "AfterHELP": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.last.still_overdue",
+          "BooleanEquals": true,
+          "Next": "WaitL3"
+        }
+      ],
+      "Default": "Resolved"
+    },
+    "WaitL3": {
+      "Type": "Wait",
+      "SecondsPath": "$.wait_l3_s",
+      "Next": "NotifyL3"
+    },
+    "NotifyL3": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${NotifyFunctionArn}",
+        "Payload": {
+          "trek_id.$": "$.trek_id",
+          "execution.$": "$.execution",
+          "level": "L3",
+          "note.$": "$.note"
+        }
+      },
+      "ResultSelector": {
+        "still_overdue.$": "$.Payload.still_overdue"
+      },
+      "ResultPath": "$.last",
+      "TimeoutSeconds": 30,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException",
+            "States.Timeout"
+          ],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 6,
+          "BackoffRate": 2.0,
+          "JitterStrategy": "FULL"
+        },
+        {
+          "ErrorEquals": [
+            "States.TaskFailed"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 4,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailed"
+        }
+      ],
+      "End": true
+    },
+    "Resolved": {
+      "Type": "Succeed"
+    },
+    "NotifyFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${OpsTopicArn}",
+        "Subject": "Bato: escalation could not send SMS",
+        "Message.$": "States.Format('Trek {} ({}): {}', $.trek_id, $.execution, $.error.Cause)"
+      },
+      "Next": "Failed"
+    },
+    "Failed": {
+      "Type": "Fail",
+      "Error": "NotifyFailed"
+    }
+  }
+}

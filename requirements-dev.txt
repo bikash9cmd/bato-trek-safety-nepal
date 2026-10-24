@@ -1,0 +1,12 @@
+-r requirements.txt
+pytest>=8.0
+moto[dynamodb,stepfunctions,ssm,iam]>=5.0
+pyyaml>=6.0
+ruff>=0.6
+cfn-lint>=1.0
+# only for re-pulling the weather data (scripts/) and the live forecast
+eccodes>=2.37
+h5py>=3.11
+fsspec>=2024.6
+aiohttp>=3.9
+requests>=2.32

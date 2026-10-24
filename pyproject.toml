@@ -1,0 +1,19 @@
+[project]
+name = "bato"
+version = "1.0.0"
+description = "Overdue-trek alerts and storm holds for Nepal's high passes"
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
+
+[tool.ruff]
+line-length = 130
+target-version = "py312"
+extend-exclude = ["data", "artifacts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = ["S101", "S105", "S311"]   # asserts in tests; "pass_id" is not a password; random drives the simulation
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
