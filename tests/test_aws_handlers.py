@@ -107,10 +107,12 @@ def test_notify_task_reports_whether_to_keep_climbing(aws, monkeypatch):
     assert handlers.notify({"trek_id": tid, "execution": "someone-else", "level": "L2"})["still_overdue"] is False
 
 
-def test_weather_poll_issues_a_hold_and_only_a_warden_lifts_it(aws):
+def test_weather_poll_issues_a_hold_and_only_a_warden_lifts_it(aws, monkeypatch):
     handlers.api_register(_http({**REQ, "nights": ["manang", "yak-kharka", "thorong-phedi", "muktinath"],
                                  "start_date": "2026-10-19"}))
+    monkeypatch.setattr(handlers, "_now", lambda: 1792548900)           # 21 Oct 08:00 NPT, the day before the crossing
     out = handlers.weather_poll({}, fetch=lambda cycle: {"thorong-la": [20, 20, 20, 20, 0, 0, 0, 0]})
+    assert out["cycle"] == "2026-10-20T18:00:00+00:00"                  # newest complete GEFS run at that hour
     assert out["messages"] >= 1
     passes = json.loads(handlers.api_passes({})["body"])
     assert passes["thorong-la"]["level"] == "HOLD"
