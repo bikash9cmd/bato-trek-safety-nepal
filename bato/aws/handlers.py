@@ -179,7 +179,7 @@ def notify(event, _ctx=None):
 
 
 def weather_poll(event, _ctx=None, fetch=forecast.live_precip):
-    now = datetime.now(UTC)
+    now = datetime.fromtimestamp(_now(), UTC)
     cycle = forecast.latest_cycle(now)
     series = fetch(cycle)
     sent = 0
