@@ -1,5 +1,7 @@
 # Bato (बाटो): knowing when a trekking group hasn't arrived, and when a pass is about to close
 
+[![Try it live](https://img.shields.io/badge/Try_it-live-2ea44f?style=for-the-badge)](https://bato-trek-safety-nepal.onrender.com)
+
 Bato watches trekking groups on Nepal's high routes and notices when one **doesn't arrive**. A guide texts `IN Manang` from a feature phone; Bato knows the group's plan, works out when they should reach the next village, and if they don't, climbs a ladder: an SMS to the guide, then the agency, then a rescue case. Every six hours it also reads NOAA's forecast for six high passes and puts a pass on **storm hold** when heavy snow is coming, telling every group due to cross it. Only a person on the ground can lift a hold.
 
 It runs on AWS serverless, costs **about $15 a month in AWS charges** at peak season, and the expensive part is SMS, which I treat as the main thing to design for.
@@ -147,6 +149,16 @@ What I'd tell an interviewer about this table:
 | Performance efficiency | Five-minute sweeps over a sparse index; ~3 MB of byte-range reads per forecast instead of whole GRIB files; Graviton |
 | Cost optimisation | ~$15/month of AWS at peak; SMS budget breaker for non-critical messages; guide-only first rung; GSM-7 text; on-demand everything |
 | Sustainability | Nothing runs between sweeps; weather is read four times a day, matching the forecast cycle |
+
+## Try it live
+
+**[https://bato-trek-safety-nepal.onrender.com](https://bato-trek-safety-nepal.onrender.com)**
+
+Be the guide of a group on the Annapurna Circuit in October 2014: text check-ins, run the weather poller on the real Cyclone Hudhud forecasts to put Thorong La on storm hold, or skip a check-in and move the clock to watch the escalation ladder.
+
+It runs on a free server that sleeps when nobody is using it, so the first visit can take a minute to wake up. Everything runs offline: no API keys, no cloud account.
+
+To run the same page locally: `pip install -r requirements-app.txt` and then `streamlit run app.py`.
 
 ## Run it
 

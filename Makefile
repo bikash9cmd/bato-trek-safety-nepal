@@ -1,6 +1,6 @@
 PY ?= python
 
-.PHONY: setup test lint demo hindcast simulate cost live asl validate-infra bundle deploy data
+.PHONY: setup test lint demo hindcast simulate cost live asl validate-infra bundle deploy data app
 
 setup:            ## virtualenv with dev dependencies
 	$(PY) -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
@@ -48,3 +48,6 @@ bundle:           ## Lambda zip: the package and the trail data, nothing else (b
 
 deploy: bundle    ## see infra/README.md first
 	cd infra && sam build && sam deploy --guided --region ap-south-1 --stack-name bato
+
+app:              ## the Streamlit demo on http://localhost:8501 (pip install -r requirements-app.txt first)
+	$(PY) -m streamlit run app.py
