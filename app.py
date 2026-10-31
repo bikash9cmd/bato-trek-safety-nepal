@@ -13,11 +13,12 @@ from pathlib import Path
 
 import streamlit as st
 
+import brand
 from bato import config, hindcast, holds, sms
 from bato.engine import Engine, LocalLadder
 from bato.store import MemoryStore
 
-st.set_page_config(page_title="Bato", page_icon="🏔️", layout="centered")
+brand.page("bato")
 
 GUIDE = "9841000001"
 NIGHTS = ["dharapani", "chame", "pisang", "manang", "manang", "yak-kharka", "thorong-phedi", "muktinath", "jomsom"]
@@ -82,8 +83,6 @@ if "trek" not in st.session_state:
     st.session_state.trek = new_trek()
 s = st.session_state.trek
 
-st.title("Bato (बाटो)")
-st.caption("Knowing when a trekking group hasn't arrived, and when a pass is about to close.")
 
 play, replay, results = st.tabs(["Be the guide", "October 2014 replay", "Ten years of forecasts"])
 
@@ -96,7 +95,7 @@ with play:
     )
     c1, c2 = st.columns([3, 1])
     text = c1.text_input("SMS from the guide", "IN Chame", help="IN <place>, STAY <days>, HELP <note>, or anything else")
-    if c2.button("Send", width="stretch"):
+    if c2.button("Send", width="stretch", type="primary"):
         s["n"] += 1
         res = s["eng"].inbound_sms(GUIDE, text, f"m{s['n']}", s["clock"][0])
         show(s, "guide SMS", f"{text!r} -> {res.reply}")
@@ -145,7 +144,7 @@ with replay:
         "forecast, a warden lifting it, and a missed check-in climbing the ladder."
     )
     lines = json.loads(Path("artifacts/reports/demo_transcript.json").read_text())
-    st.code("\n".join(lines), language=None)
+    st.code("\n".join(lines), language=None, wrap_lines=True)
 
 with results:
     for img, cap in [
@@ -156,3 +155,5 @@ with results:
         p = Path("docs/img") / img
         if p.exists():
             st.image(str(p), caption=cap)
+
+brand.footer()
